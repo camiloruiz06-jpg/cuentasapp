@@ -1,5 +1,5 @@
 // Sube el número de versión cada vez que cambies index.html
-var CACHE='mi-reventa-v4';
+var CACHE='mi-reventa-v5';
 var SHELL=['./','index.html','manifest.webmanifest','favicon.svg','icon-192.png','icon-512.png','apple-touch-icon.png'];
 
 self.addEventListener('install',function(e){
