@@ -359,36 +359,46 @@ function persistCloud(){
   try{localStorage.setItem(CLOUD_KEY,JSON.stringify({url:cloud.url,anon:cloud.anon,pin:cloud.pin,ok:cloud.ok,last:cloud.last}));}catch(e){}
 }
 function cloudMsg(err){
-  var m=String(err&&err.message||err||'');
+  var m=String(err&&err.message||err||'').replace(/\s+/g,' ').slice(0,160);
   if(m.indexOf('PIN_CORTO')>-1)return 'El PIN debe tener al menos 4 caracteres.';
-  if(m.indexOf('PIN_MAL')>-1)return 'Ese PIN no coincide.';
-  if(m.indexOf('YA_EXISTE')>-1)return 'La nube ya está creada. Usa el mismo PIN.';
-  if(m.indexOf('SIN_NUBE')>-1)return 'Aún no hay nube. Toca Activar para crearla.';
+  if(m.indexOf('Could not find the table')>-1||m.indexOf('PGRST205')>-1||m.indexOf('reventa_box')>-1)return 'Falta correr activar.sql en Supabase y darle Run.';
   if(m.indexOf('Failed to fetch')>-1||m.indexOf('NetworkError')>-1)return 'Sin internet. Se guardó en este teléfono.';
   if(m.indexOf('Invalid JWT')>-1||m.indexOf('JWSError')>-1)return 'Esa clave no sirve así. Usa la publishable (sb_publishable_…).';
   if(m.indexOf('PGRST202')>-1||m.indexOf('schema cache')>-1||m.indexOf('reventa_pull')>-1)return 'Falta pegar el SQL en Supabase y darle Run.';
-  return 'No se pudo hablar con la nube.';
+  if(!m)return 'No se pudo hablar con la nube.';
+  return 'No se pudo: '+m;
 }
-function rpc(name,body){
+function cloudHeaders(extra){
+  var h={'Content-Type':'application/json',apikey:cloud.anon,Accept:'application/json'};
+  if(cloud.anon.indexOf('eyJ')===0)h.Authorization='Bearer '+cloud.anon;
+  if(extra)Object.keys(extra).forEach(function(k){h[k]=extra[k];});
+  return h;
+}
+function cloudReq(path,opt){
   var url=tidyUrl(cloud.url);
-  if(!url||!cloud.anon)return Promise.reject(new Error('Faltan la URL o la clave de Supabase.'));
-  var headers={'Content-Type':'application/json',apikey:cloud.anon};
-  if(cloud.anon.indexOf('eyJ')===0)headers.Authorization='Bearer '+cloud.anon;
-  return fetch(url+'/rest/v1/rpc/'+name,{
-    method:'POST',
-    headers:headers,
-    body:JSON.stringify(body)
-  }).then(function(res){
+  if(!url||!cloud.anon)return Promise.reject(new Error('Falta la URL de Supabase.'));
+  return fetch(url+'/rest/v1/'+path,opt).then(function(res){
     return res.text().then(function(t){
       var j=null;try{j=JSON.parse(t);}catch(e){}
-      if(!res.ok)throw new Error((j&&(j.message||j.details))||t||('HTTP '+res.status));
+      if(!res.ok)throw new Error((j&&(j.message||j.details||j.hint))||t||('HTTP '+res.status));
       return j;
     });
   });
 }
+function boxPull(){
+  return cloudReq('reventa_box?pin=eq.'+encodeURIComponent(cloud.pin)+'&select=data',{
+    method:'GET',headers:cloudHeaders()
+  }).then(function(rows){return rows&&rows[0]?rows[0].data:null;});
+}
+function boxPush(){
+  return cloudReq('reventa_box?on_conflict=pin',{
+    method:'POST',
+    headers:cloudHeaders({Prefer:'resolution=merge-duplicates,return=minimal'}),
+    body:JSON.stringify({pin:cloud.pin,data:S,updated_at:new Date().toISOString()})
+  });
+}
 function countMoves(s){return (s.sales||[]).length+(s.purchases||[]).length+(s.moves||[]).length;}
-function applyCloudData(payload){
-  var d=payload&&payload.data;
+function applyCloudData(d){
   if(!d||typeof d!=='object')return false;
   if(!Array.isArray(d.sales)||!Array.isArray(d.purchases)||!Array.isArray(d.products))return false;
   var next=migrate(d),er=validate(next);
@@ -401,7 +411,7 @@ function applyCloudData(payload){
 function cloudPush(){
   if(!cloud.ok||!cloud.pin||cloud.busy)return Promise.resolve();
   cloud.busy=true;
-  return rpc('reventa_push',{p_pin:cloud.pin,p_data:S}).then(function(){
+  return boxPush().then(function(){
     cloud.last=Date.now();cloud.err='';persistCloud();refreshCloudStatus();
   }).catch(function(e){
     cloud.err=cloudMsg(e);refreshCloudStatus();
@@ -444,25 +454,12 @@ function connectCloud(){
   if(cloud.pin.length<4){toast('El PIN debe tener al menos 4 caracteres',true);return;}
   persistCloud();
   toast('Conectando…');
-  rpc('reventa_pull',{p_pin:cloud.pin}).then(function(payload){
-    markCloudOn();
-    if(applyCloudData(payload))toast('Nube activa. Datos bajados.');
-    else {queueCloud();toast('Nube activa. Ya se van a guardar tus datos.');}
+  boxPull().then(function(data){
+    if(data&&applyCloudData(data)){markCloudOn();toast('Nube activa. Datos bajados.');return;}
+    return boxPush().then(function(){markCloudOn();toast('Nube activa. Ya se guardan tus compras y ventas.');});
   }).catch(function(e){
-    var m=String(e&&e.message||'');
-    if(m.indexOf('SIN_NUBE')>-1){
-      return rpc('reventa_setup',{p_pin:cloud.pin}).catch(function(){
-        return rpc('reventa_push',{p_pin:cloud.pin,p_data:S});
-      }).then(function(){
-        markCloudOn();
-        toast('Nube activa. Ya se guardan tus compras y ventas.');
-      }).catch(function(e2){
-        cloud.ok=false;persistCloud();
-        toast(cloudMsg(e2)+' Si ya corriste el SQL, vuelve a pegar supabase.sql y dale Run.',true);
-        refreshCloudStatus();
-      });
-    }
-    cloud.ok=false;persistCloud();toast(cloudMsg(e),true);refreshCloudStatus();
+    cloud.ok=false;cloud.err=cloudMsg(e);persistCloud();
+    toast(cloud.err,true);refreshCloudStatus();
   });
 }
 S=load();
@@ -1004,8 +1001,8 @@ window.addEventListener('appinstalled',function(){deferredInstall=null;showInsta
 render();
 askPersist();
 if(cloud.ok&&cloud.pin){
-  rpc('reventa_pull',{p_pin:cloud.pin}).then(function(payload){
-    if(applyCloudData(payload))toast('Datos actualizados desde la nube');
+  boxPull().then(function(data){
+    if(data&&applyCloudData(data))toast('Datos actualizados desde la nube');
   }).catch(function(){});
 }
 })();
