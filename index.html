@@ -356,13 +356,13 @@ cloud.pin='mi-reventa';cloud.url=tidyUrl(cloud.url);
 function persistCloud(){
   try{localStorage.setItem(CLOUD_KEY,JSON.stringify({last:cloud.last}));}catch(e){}
 }
+var ACTIVATE_SQL='grant usage on schema public to anon, authenticated;\n\ncreate table if not exists reventa_box (\n  pin text primary key,\n  data jsonb not null default \'{}\'::jsonb,\n  updated_at timestamptz not null default now()\n);\n\nalter table reventa_box enable row level security;\n\ndrop policy if exists reventa_box_all on reventa_box;\ncreate policy reventa_box_all on reventa_box\n  for all to anon, authenticated\n  using (true)\n  with check (true);\n\ngrant select, insert, update on table reventa_box to anon, authenticated;\n\nnotify pgrst, \'reload schema\';';
 function cloudMsg(err){
   var m=String(err&&err.message||err||'').replace(/\s+/g,' ').slice(0,160);
-  if(m.indexOf('PIN_CORTO')>-1)return 'El PIN debe tener al menos 4 caracteres.';
-  if(m.indexOf('Could not find the table')>-1||m.indexOf('PGRST205')>-1||m.indexOf('reventa_box')>-1)return 'Falta correr activar.sql en Supabase y darle Run.';
+  if(m.indexOf('Could not find the table')>-1||m.indexOf('PGRST205')>-1||m.indexOf('reventa_box')>-1)return 'Falta crear la tabla. Copia el SQL de abajo, pégalo en Supabase → SQL Editor y dale Run.';
   if(m.indexOf('Failed to fetch')>-1||m.indexOf('NetworkError')>-1)return 'Sin internet. Se guardó en este teléfono.';
   if(m.indexOf('Invalid JWT')>-1||m.indexOf('JWSError')>-1)return 'Esa clave no sirve así. Usa la publishable (sb_publishable_…).';
-  if(m.indexOf('PGRST202')>-1||m.indexOf('schema cache')>-1||m.indexOf('reventa_pull')>-1)return 'Falta pegar el SQL en Supabase y darle Run.';
+  if(m.indexOf('PGRST202')>-1||m.indexOf('schema cache')>-1||m.indexOf('reventa_pull')>-1)return 'Falta crear la tabla. Copia el SQL de abajo, pégalo en Supabase y dale Run.';
   if(!m)return 'No se pudo hablar con la nube.';
   return 'No se pudo: '+m;
 }
@@ -427,6 +427,23 @@ function save(opts){
 function cloudStatusHTML(){
   if(cloud.err)return '<p class="hint cloud-bad" id="cloudStatus">'+esc(cloud.err)+'</p>';
   return '<p class="hint cloud-ok" id="cloudStatus">Nube activa. Cada compra o venta se guarda sola.'+(cloud.last?' Último envío: '+ago(cloud.last)+'.':'')+'</p>';
+}
+function cloudHelpHTML(){
+  if(!cloud.err)return '';
+  return '<p class="hint" style="margin-top:10px">En supabase.com entra a tu proyecto → SQL Editor. Pega esto y dale <b>Run</b>. El archivo supabase.sql de la carpeta es el mismo texto.</p>'+
+  '<textarea id="sqlBox" readonly>'+esc(ACTIVATE_SQL)+'</textarea>'+
+  '<div class="row" style="margin-top:10px">'+
+  '<button class="btn sm" data-act="copysql">Copiar SQL</button>'+
+  '<button class="btn ghost sm" data-act="cloudretry">Ya lo corrí</button>'+
+  '</div>';
+}
+function retryCloud(){
+  boxPull().then(function(data){
+    if(data&&applyCloudData(data)){cloud.last=Date.now();cloud.err='';persistCloud();render();toast('Nube activa.');return;}
+    return boxPush().then(function(){cloud.last=Date.now();cloud.err='';persistCloud();render();toast('Nube activa.');});
+  }).catch(function(e){
+    cloud.err=cloudMsg(e);render();toast(cloud.err,true);
+  });
 }
 function refreshCloudStatus(){
   var el=$('#cloudStatus');if(!el)return;
@@ -710,7 +727,9 @@ function viewSet(){
   '<p class="hint">Puedes usarla como app. En Android toca <b>Instalar</b> arriba. En iPhone: compartir y «Añadir a pantalla de inicio». Los datos se guardan solos en la nube.</p></section>'+
   '<section class="card"><h2>Nube</h2>'+
   cloudStatusHTML()+
-  '<p class="hint" style="margin-top:10px">No hay que activar nada. En este teléfono o en otro, ves lo mismo.</p></section>'+
+  cloudHelpHTML()+
+  (cloud.err?'':'<p class="hint" style="margin-top:10px">No hay que activar nada. En este teléfono o en otro, ves lo mismo.</p>')+
+  '</section>'+
   '<section class="card"><h2>Reparto de la ganancia</h2>'+
   '<p class="hint" style="margin-bottom:12px">Solo cambia las ventas nuevas. El costo del producto siempre vuelve al fondo.</p>'+
   '<div class="chips"><button class="chip" data-act="preset" data-r="50" data-s="20">Equilibrado 50/20/30</button><button class="chip" data-act="preset" data-r="70" data-s="15">Crecer rápido 70/15/15</button><button class="chip" data-act="preset" data-r="30" data-s="20">Más para mí 30/20/50</button></div>'+
@@ -916,12 +935,12 @@ document.addEventListener('click',function(e){
     case 'cloudoff':
       cloud.ok=false;cloud.err='';persistCloud();refreshCloudStatus();toast('Este teléfono ya no envía a la nube. Los datos de allá siguen.');
       render();break;
-    case 'copysql':
-      fetch('supabase.sql').then(function(r){if(!r.ok)throw new Error('x');return r.text();}).then(function(t){
-        var done=function(){toast('SQL copiado. Pégalo en Supabase → SQL Editor → Run.');};
-        try{navigator.clipboard.writeText(t).then(done,function(){throw new Error('x');});}catch(err){toast('Abre el archivo supabase.sql y cópialo a mano.',true);}
-      }).catch(function(){toast('Abre el archivo supabase.sql y cópialo a mano.',true);});
-      break;
+    case 'copysql':{
+      var done=function(){toast('SQL copiado. Pégalo en Supabase → SQL Editor → Run.');};
+      try{navigator.clipboard.writeText(ACTIVATE_SQL).then(done,function(){throw new Error('x');});}
+      catch(err){var box=$('#sqlBox');if(box){box.focus();box.select();toast('Selecciona el texto y cópialo.',true);}else toast('Copia el SQL del recuadro.',true);}
+      break;}
+    case 'cloudretry':retryCloud();break;
     case 'wipe':
       if(armed(b,'wipe')){S=clone(DEFAULT);save({cloud:false});tab='home';render();toast('Datos borrados de este teléfono. La nube no se tocó.');}break;
   }
