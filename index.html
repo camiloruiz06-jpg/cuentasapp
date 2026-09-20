@@ -350,13 +350,11 @@ var CLOUD_KEY='reventa-cloud';
 function tidyUrl(u){
   return String(u||'').trim().replace(/\/$/,'').replace(/\/rest\/v1$/,'');
 }
-var cloud={url:'https://cylisiaqbnzwbksjfnaw.supabase.co',anon:'sb_publishable_8l9nasoX_ai2i0Ak8Dr6iA_YqqTBBTG',pin:'',ok:false,busy:false,last:0,err:''};
-try{Object.assign(cloud,JSON.parse(localStorage.getItem(CLOUD_KEY)||'{}'));}catch(e){}
-if(!cloud.anon)cloud.anon='sb_publishable_8l9nasoX_ai2i0Ak8Dr6iA_YqqTBBTG';
-if(!cloud.url)cloud.url='https://cylisiaqbnzwbksjfnaw.supabase.co';
-cloud.url=tidyUrl(cloud.url);
+var cloud={url:'https://cylisiaqbnzwbksjfnaw.supabase.co',anon:'sb_publishable_8l9nasoX_ai2i0Ak8Dr6iA_YqqTBBTG',pin:'mi-reventa',ok:true,busy:false,last:0,err:''};
+try{var saved=JSON.parse(localStorage.getItem(CLOUD_KEY)||'{}');if(saved.last)cloud.last=saved.last;}catch(e){}
+cloud.pin='mi-reventa';cloud.url=tidyUrl(cloud.url);
 function persistCloud(){
-  try{localStorage.setItem(CLOUD_KEY,JSON.stringify({url:cloud.url,anon:cloud.anon,pin:cloud.pin,ok:cloud.ok,last:cloud.last}));}catch(e){}
+  try{localStorage.setItem(CLOUD_KEY,JSON.stringify({last:cloud.last}));}catch(e){}
 }
 function cloudMsg(err){
   var m=String(err&&err.message||err||'').replace(/\s+/g,' ').slice(0,160);
@@ -409,7 +407,7 @@ function applyCloudData(d){
   return true;
 }
 function cloudPush(){
-  if(!cloud.ok||!cloud.pin||cloud.busy)return Promise.resolve();
+  if(cloud.busy)return Promise.resolve();
   cloud.busy=true;
   return boxPush().then(function(){
     cloud.last=Date.now();cloud.err='';persistCloud();refreshCloudStatus();
@@ -419,7 +417,6 @@ function cloudPush(){
 }
 var cloudT;
 function queueCloud(){
-  if(!cloud.ok)return;
   clearTimeout(cloudT);
   cloudT=setTimeout(function(){cloudPush();},700);
 }
@@ -428,12 +425,8 @@ function save(opts){
   catch(e){storageOK=false;if(!warnedSave){warnedSave=true;toast('Este navegador no deja guardar datos. Copia un respaldo desde Ajustes.',true);}}
 }
 function cloudStatusHTML(){
-  if(cloud.ok){
-    return '<p class="hint cloud-ok" id="cloudStatus">Nube activa. Cada compra o venta se guarda también ahí.'+
-    (cloud.last?' Último envío: '+ago(cloud.last)+'.':'')+
-    (cloud.err?' <span class="cloud-bad">'+esc(cloud.err)+'</span>':'')+'</p>';
-  }
-  return '<p class="hint'+(cloud.err?' cloud-bad':'')+'" id="cloudStatus">'+(cloud.err?esc(cloud.err):'Todavía no está conectada. Escribe un PIN y toca Activar nube.')+'</p>';
+  if(cloud.err)return '<p class="hint cloud-bad" id="cloudStatus">'+esc(cloud.err)+'</p>';
+  return '<p class="hint cloud-ok" id="cloudStatus">Nube activa. Cada compra o venta se guarda sola.'+(cloud.last?' Último envío: '+ago(cloud.last)+'.':'')+'</p>';
 }
 function refreshCloudStatus(){
   var el=$('#cloudStatus');if(!el)return;
@@ -714,17 +707,10 @@ function viewSet(){
   var s=S.settings;
   return '<h1>Ajustes</h1>'+
   '<section class="card"><h2>En tu teléfono</h2>'+
-  '<p class="hint">Puedes usarla como app. En Android toca <b>Instalar</b> arriba. En iPhone: compartir y «Añadir a pantalla de inicio».'+(cloud.ok?' Los datos también se guardan en la nube.':' Tus datos, por ahora, solo viven en este dispositivo.')+'</p></section>'+
-  '<section class="card"><h2>Guardar en la nube</h2>'+
+  '<p class="hint">Puedes usarla como app. En Android toca <b>Instalar</b> arriba. En iPhone: compartir y «Añadir a pantalla de inicio». Los datos se guardan solos en la nube.</p></section>'+
+  '<section class="card"><h2>Nube</h2>'+
   cloudStatusHTML()+
-  '<p class="hint" style="margin:10px 0 12px">'+(cloud.ok?'Ya está conectada. En otro teléfono pon el mismo PIN.':'Inventa un PIN (como una clave). Con eso tus compras y ventas no se pierden si cambias de teléfono.')+'</p>'+
-  '<input id="cloudUrl" type="hidden" value="'+esc(cloud.url||'')+'">'+
-  '<input id="cloudAnon" type="hidden" value="'+esc(cloud.anon||'')+'">'+
-  '<div class="field"><label for="cloudPin">Tu PIN</label><input id="cloudPin" type="password" maxlength="32" placeholder="Ej. 2580" value="'+esc(cloud.pin||'')+'"></div>'+
-  (cloud.ok
-    ?'<button class="btn" data-act="cloudon">Volver a sincronizar</button><button class="btn ghost sm" data-act="cloudoff" style="margin-top:8px">Desconectar este teléfono</button>'
-    :'<button class="btn" data-act="cloudon">Activar nube</button>')+
-  '</section>'+
+  '<p class="hint" style="margin-top:10px">No hay que activar nada. En este teléfono o en otro, ves lo mismo.</p></section>'+
   '<section class="card"><h2>Reparto de la ganancia</h2>'+
   '<p class="hint" style="margin-bottom:12px">Solo cambia las ventas nuevas. El costo del producto siempre vuelve al fondo.</p>'+
   '<div class="chips"><button class="chip" data-act="preset" data-r="50" data-s="20">Equilibrado 50/20/30</button><button class="chip" data-act="preset" data-r="70" data-s="15">Crecer rápido 70/15/15</button><button class="chip" data-act="preset" data-r="30" data-s="20">Más para mí 30/20/50</button></div>'+
@@ -1000,11 +986,12 @@ window.addEventListener('beforeinstallprompt',function(e){
 window.addEventListener('appinstalled',function(){deferredInstall=null;showInstall();});
 render();
 askPersist();
-if(cloud.ok&&cloud.pin){
-  boxPull().then(function(data){
-    if(data&&applyCloudData(data))toast('Datos actualizados desde la nube');
-  }).catch(function(){});
-}
+boxPull().then(function(data){
+  if(data&&applyCloudData(data))toast('Datos actualizados desde la nube');
+  else queueCloud();
+}).catch(function(e){
+  cloud.err=cloudMsg(e);refreshCloudStatus();
+});
 })();
 </script>
 <script>
