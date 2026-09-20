@@ -175,6 +175,8 @@ input#rngS{accent-color:var(--reserve)}
 .btn.sm{width:auto;padding:9px 14px;font-size:14px}
 .btn.danger{background:transparent;color:var(--bad);border-color:var(--bad)}
 .btn.danger.armed{background:var(--bad);color:#fff}
+.cloud-ok{color:var(--good);font-weight:600}
+.cloud-bad{color:var(--bad);font-weight:600}
 .link{background:none;border:0;color:var(--muted);text-decoration:underline;font:500 13px var(--body);padding:6px 0 2px 8px;cursor:pointer}
 .link.armed{color:var(--bad);font-weight:700}
 
@@ -344,9 +346,116 @@ function load(){
   return clone(DEFAULT);
 }
 var warnedSave=false;
-function save(){
-  try{localStorage.setItem(KEY,JSON.stringify(S));askPersist();}
+var CLOUD_KEY='reventa-cloud';
+function tidyUrl(u){
+  return String(u||'').trim().replace(/\/$/,'').replace(/\/rest\/v1$/,'');
+}
+var cloud={url:'https://cylisiaqbnzwbksjfnaw.supabase.co',anon:'sb_publishable_8l9nasoX_ai2i0Ak8Dr6iA_YqqTBBTG',pin:'',ok:false,busy:false,last:0,err:''};
+try{Object.assign(cloud,JSON.parse(localStorage.getItem(CLOUD_KEY)||'{}'));}catch(e){}
+if(!cloud.anon)cloud.anon='sb_publishable_8l9nasoX_ai2i0Ak8Dr6iA_YqqTBBTG';
+if(!cloud.url)cloud.url='https://cylisiaqbnzwbksjfnaw.supabase.co';
+cloud.url=tidyUrl(cloud.url);
+function persistCloud(){
+  try{localStorage.setItem(CLOUD_KEY,JSON.stringify({url:cloud.url,anon:cloud.anon,pin:cloud.pin,ok:cloud.ok,last:cloud.last}));}catch(e){}
+}
+function cloudMsg(err){
+  var m=String(err&&err.message||err||'');
+  if(m.indexOf('PIN_CORTO')>-1)return 'El PIN debe tener al menos 4 caracteres.';
+  if(m.indexOf('PIN_MAL')>-1)return 'Ese PIN no coincide.';
+  if(m.indexOf('YA_EXISTE')>-1)return 'La nube ya está creada. Usa el mismo PIN.';
+  if(m.indexOf('SIN_NUBE')>-1)return 'Aún no hay nube. Toca Activar para crearla.';
+  if(m.indexOf('Failed to fetch')>-1||m.indexOf('NetworkError')>-1)return 'Sin internet. Se guardó en este teléfono.';
+  if(m.indexOf('Invalid JWT')>-1||m.indexOf('JWSError')>-1)return 'Esa clave no sirve así. Usa la publishable (sb_publishable_…).';
+  if(m.indexOf('PGRST202')>-1||m.indexOf('schema cache')>-1||m.indexOf('reventa_pull')>-1)return 'Falta pegar el SQL en Supabase y darle Run.';
+  return 'No se pudo hablar con la nube.';
+}
+function rpc(name,body){
+  var url=tidyUrl(cloud.url);
+  if(!url||!cloud.anon)return Promise.reject(new Error('Faltan la URL o la clave de Supabase.'));
+  var headers={'Content-Type':'application/json',apikey:cloud.anon};
+  if(cloud.anon.indexOf('eyJ')===0)headers.Authorization='Bearer '+cloud.anon;
+  return fetch(url+'/rest/v1/rpc/'+name,{
+    method:'POST',
+    headers:headers,
+    body:JSON.stringify(body)
+  }).then(function(res){
+    return res.text().then(function(t){
+      var j=null;try{j=JSON.parse(t);}catch(e){}
+      if(!res.ok)throw new Error((j&&(j.message||j.details))||t||('HTTP '+res.status));
+      return j;
+    });
+  });
+}
+function countMoves(s){return (s.sales||[]).length+(s.purchases||[]).length+(s.moves||[]).length;}
+function applyCloudData(payload){
+  var d=payload&&payload.data;
+  if(!d||typeof d!=='object')return false;
+  if(!Array.isArray(d.sales)||!Array.isArray(d.purchases)||!Array.isArray(d.products))return false;
+  var next=migrate(d),er=validate(next);
+  if(er)return false;
+  if(countMoves(next)<1&&countMoves(S)>0)return false;
+  if(countMoves(next)<countMoves(S))return false;
+  S=next;save({cloud:false});render();
+  return true;
+}
+function cloudPush(){
+  if(!cloud.ok||!cloud.pin||cloud.busy)return Promise.resolve();
+  cloud.busy=true;
+  return rpc('reventa_push',{p_pin:cloud.pin,p_data:S}).then(function(){
+    cloud.last=Date.now();cloud.err='';persistCloud();refreshCloudStatus();
+  }).catch(function(e){
+    cloud.err=cloudMsg(e);refreshCloudStatus();
+  }).then(function(){cloud.busy=false;});
+}
+var cloudT;
+function queueCloud(){
+  if(!cloud.ok)return;
+  clearTimeout(cloudT);
+  cloudT=setTimeout(function(){cloudPush();},700);
+}
+function save(opts){
+  try{localStorage.setItem(KEY,JSON.stringify(S));askPersist();if(!opts||opts.cloud!==false)queueCloud();}
   catch(e){storageOK=false;if(!warnedSave){warnedSave=true;toast('Este navegador no deja guardar datos. Copia un respaldo desde Ajustes.',true);}}
+}
+function cloudStatusHTML(){
+  if(cloud.ok){
+    return '<p class="hint cloud-ok" id="cloudStatus">Nube activa. Cada compra o venta se guarda también ahí.'+
+    (cloud.last?' Último envío: '+ago(cloud.last)+'.':'')+
+    (cloud.err?' <span class="cloud-bad">'+esc(cloud.err)+'</span>':'')+'</p>';
+  }
+  return '<p class="hint" id="cloudStatus">Todavía no está conectada. Los datos solo viven en este teléfono.</p>';
+}
+function refreshCloudStatus(){
+  var el=$('#cloudStatus');if(!el)return;
+  el.outerHTML=cloudStatusHTML();
+}
+function readCloudForm(){
+  var u=$('#cloudUrl'),a=$('#cloudAnon'),p=$('#cloudPin');
+  if(u)cloud.url=tidyUrl(u.value);
+  if(a)cloud.anon=a.value.trim();
+  if(p)cloud.pin=p.value;
+}
+function connectCloud(){
+  readCloudForm();
+  if(!cloud.url||!cloud.anon||!cloud.pin){toast('Llena URL, clave y PIN',true);return;}
+  if(cloud.pin.length<4){toast('El PIN debe tener al menos 4 caracteres',true);return;}
+  persistCloud();
+  toast('Conectando…');
+  rpc('reventa_pull',{p_pin:cloud.pin}).then(function(payload){
+    cloud.ok=true;cloud.err='';cloud.last=Date.now();persistCloud();
+    if(applyCloudData(payload))toast('Datos bajados de la nube');
+    else {queueCloud();toast('Nube conectada. Se van a guardar tus datos de este teléfono.');}
+    refreshCloudStatus();
+  }).catch(function(e){
+    var m=String(e&&e.message||'');
+    if(m.indexOf('SIN_NUBE')>-1){
+      return rpc('reventa_setup',{p_pin:cloud.pin}).then(function(){
+        cloud.ok=true;cloud.err='';persistCloud();
+        return cloudPush().then(function(){toast('Nube creada. Desde otro teléfono usa el mismo PIN.');refreshCloudStatus();});
+      });
+    }
+    cloud.ok=false;persistCloud();toast(cloudMsg(e),true);refreshCloudStatus();
+  });
 }
 S=load();
 var persisted=null,askedPersist=false,pendingStamp=0;
@@ -600,7 +709,17 @@ function viewSet(){
   var s=S.settings;
   return '<h1>Ajustes</h1>'+
   '<section class="card"><h2>En tu teléfono</h2>'+
-  '<p class="hint">Puedes usarla como app. En Android toca <b>Instalar</b> arriba. En iPhone: compartir y «Añadir a pantalla de inicio». Tus datos se quedan en este dispositivo.</p></section>'+
+  '<p class="hint">Puedes usarla como app. En Android toca <b>Instalar</b> arriba. En iPhone: compartir y «Añadir a pantalla de inicio».'+(cloud.ok?' Los datos también se guardan en la nube.':' Tus datos, por ahora, solo viven en este dispositivo.')+'</p></section>'+
+  '<section class="card"><h2>Guardar en la nube</h2>'+
+  cloudStatusHTML()+
+  '<p class="hint" style="margin:10px 0 12px">'+(cloud.ok?'Ya está conectada. En otro teléfono pon el mismo PIN.':'Inventa un PIN (como una clave). Con eso tus compras y ventas no se pierden si cambias de teléfono.')+'</p>'+
+  '<input id="cloudUrl" type="hidden" value="'+esc(cloud.url||'')+'">'+
+  '<input id="cloudAnon" type="hidden" value="'+esc(cloud.anon||'')+'">'+
+  '<div class="field"><label for="cloudPin">Tu PIN</label><input id="cloudPin" type="password" maxlength="32" placeholder="Ej. 2580" value="'+esc(cloud.pin||'')+'"></div>'+
+  (cloud.ok
+    ?'<button class="btn" data-act="cloudon">Volver a sincronizar</button><button class="btn ghost sm" data-act="cloudoff" style="margin-top:8px">Desconectar este teléfono</button>'
+    :'<button class="btn" data-act="cloudon">Activar nube</button>')+
+  '</section>'+
   '<section class="card"><h2>Reparto de la ganancia</h2>'+
   '<p class="hint" style="margin-bottom:12px">Solo cambia las ventas nuevas. El costo del producto siempre vuelve al fondo.</p>'+
   '<div class="chips"><button class="chip" data-act="preset" data-r="50" data-s="20">Equilibrado 50/20/30</button><button class="chip" data-act="preset" data-r="70" data-s="15">Crecer rápido 70/15/15</button><button class="chip" data-act="preset" data-r="30" data-s="20">Más para mí 30/20/50</button></div>'+
@@ -802,8 +921,18 @@ document.addEventListener('click',function(e){
         S=next;save();tab='home';render();toast('Datos restaurados');
       }catch(err){toast('Ese texto no es un respaldo válido',true);}
       break;}
+    case 'cloudon':connectCloud();break;
+    case 'cloudoff':
+      cloud.ok=false;cloud.err='';persistCloud();refreshCloudStatus();toast('Este teléfono ya no envía a la nube. Los datos de allá siguen.');
+      render();break;
+    case 'copysql':
+      fetch('supabase.sql').then(function(r){if(!r.ok)throw new Error('x');return r.text();}).then(function(t){
+        var done=function(){toast('SQL copiado. Pégalo en Supabase → SQL Editor → Run.');};
+        try{navigator.clipboard.writeText(t).then(done,function(){throw new Error('x');});}catch(err){toast('Abre el archivo supabase.sql y cópialo a mano.',true);}
+      }).catch(function(){toast('Abre el archivo supabase.sql y cópialo a mano.',true);});
+      break;
     case 'wipe':
-      if(armed(b,'wipe')){S=clone(DEFAULT);save();tab='home';render();toast('Datos borrados');}break;
+      if(armed(b,'wipe')){S=clone(DEFAULT);save({cloud:false});tab='home';render();toast('Datos borrados de este teléfono. La nube no se tocó.');}break;
   }
 });
 document.addEventListener('input',function(e){
@@ -866,6 +995,11 @@ window.addEventListener('beforeinstallprompt',function(e){
 window.addEventListener('appinstalled',function(){deferredInstall=null;showInstall();});
 render();
 askPersist();
+if(cloud.ok&&cloud.pin){
+  rpc('reventa_pull',{p_pin:cloud.pin}).then(function(payload){
+    if(applyCloudData(payload))toast('Datos actualizados desde la nube');
+  }).catch(function(){});
+}
 })();
 </script>
 <script>
