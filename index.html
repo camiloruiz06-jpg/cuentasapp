@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#0F1B2D">
+<meta name="theme-color" content="#E8EEF4">
 <meta name="description" content="Control de compras, ventas, empaques y reparto de ganancias para tu reventa.">
 <meta name="application-name" content="Mi reventa">
 <meta property="og:title" content="Mi reventa">
@@ -37,6 +37,7 @@
   --bad:#C0362C;--good:#0B7A6C;--warn:#9A6200;
   --display:'Bricolage Grotesque','Avenir Next','Trebuchet MS',system-ui,sans-serif;
   --body:'Figtree','Segoe UI',system-ui,-apple-system,sans-serif;
+  --radius:16px;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -65,7 +66,8 @@ body{
 }
 main{max-width:520px;margin:0 auto;padding:8px 16px calc(108px + env(safe-area-inset-bottom,0px))}
 main.fade{animation:rise .28s ease}
-h1{font:700 28px/1.15 var(--display);letter-spacing:-.02em;margin:6px 0 16px}
+h1{font:700 28px/1.15 var(--display);letter-spacing:-.02em;margin:6px 0 8px}
+h1 + .lead{margin:0 0 16px}
 h2{font:700 17px/1.2 var(--display);margin:0 0 12px}
 p{margin:0}
 small{font-size:13px;color:var(--muted)}
@@ -98,10 +100,17 @@ button{font-family:inherit}
 .ico.wide{width:auto;padding:0 12px;font:600 13px var(--body)}
 [hidden]{display:none!important}
 
-.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;margin:0 0 14px;box-shadow:var(--shadow)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:0 0 14px;box-shadow:var(--shadow)}
 .hint{font-size:14px;color:var(--muted)}
+.lead{font-size:15px;color:var(--muted);max-width:36ch}
 .warn{font-size:14px;color:var(--bad);font-weight:600;margin-top:8px}
 .notice{background:var(--surface);border:1px solid var(--bad);color:var(--bad);border-radius:12px;padding:10px 12px;font-size:14px;margin:0 0 14px}
+.banner{
+  background:color-mix(in srgb, var(--warn) 14%, var(--surface));
+  border:1px solid color-mix(in srgb, var(--warn) 40%, var(--line));
+  border-radius:12px;padding:11px 12px;font-size:14px;font-weight:600;margin:0 0 14px;
+}
+.banner .link{padding:0;display:inline;font-weight:700;color:var(--warn)}
 
 /* Hero */
 .hero{padding:10px 2px 20px}
@@ -111,8 +120,8 @@ button{font-family:inherit}
 .big.neg{color:var(--bad)}
 .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .kpis div{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 10px 11px;box-shadow:var(--shadow)}
-.kpis b{display:block;font:700 16px var(--display);letter-spacing:-.02em}
-.kpis span{font-size:12px;color:var(--muted)}
+.kpis b{display:block;font:700 15px/1.15 var(--display);letter-spacing:-.02em}
+.kpis span{display:block;font-size:11px;line-height:1.25;color:var(--muted);margin-top:3px}
 
 /* Split bar */
 .split{display:flex;gap:3px;height:28px;border-radius:999px;overflow:hidden;background:var(--soft)}
@@ -136,11 +145,11 @@ button{font-family:inherit}
 
 /* Bucket cards */
 .bucket{border-left:6px solid var(--c)}
-.bucket .top{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.bhead{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
 .bucket .name{font-weight:700}
 .bucket .val{font:700 26px var(--display);letter-spacing:-.01em}
 .bucket .val.neg{color:var(--bad)}
-.bucket p.hint{margin:2px 0 12px}
+.bucket p.hint{margin:4px 0 12px}
 .b-fund{--c:var(--reinvest)}.b-reserve{--c:var(--reserve)}.b-me{--c:var(--me)}
 .move{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
 .row{display:flex;flex-wrap:wrap;gap:8px}
@@ -149,6 +158,7 @@ button{font-family:inherit}
 .field{margin:0 0 12px}
 .field label,.lab{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:0 0 6px}
 input,select,textarea{width:100%;font:500 16px var(--body);color:var(--ink);background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:12px}
+input:focus,select:focus,textarea:focus{border-color:var(--ink);background:var(--surface)}
 textarea{min-height:90px;font-size:13px;resize:vertical}
 input::placeholder,textarea::placeholder{color:var(--muted);opacity:.7}
 input[type=range]{padding:0;accent-color:var(--reinvest);background:none;border:0;height:30px}
@@ -167,6 +177,7 @@ input#rngS{accent-color:var(--reserve)}
 .field .chk label{margin:0;font-size:15px;font-weight:500;color:var(--ink);cursor:pointer}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
 .chip{border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:999px;padding:8px 14px;font-size:14px;font-weight:600;cursor:pointer}
+.chip.on{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
 .slider{margin:0 0 6px}
 .slider .head{display:flex;justify-content:space-between;font-size:14px;font-weight:600;margin-bottom:0}
 
@@ -175,8 +186,11 @@ input#rngS{accent-color:var(--reserve)}
 .btn.sm{width:auto;padding:9px 14px;font-size:14px}
 .btn.danger{background:transparent;color:var(--bad);border-color:var(--bad)}
 .btn.danger.armed{background:var(--bad);color:#fff}
+.btn:active,.chip:active,.ico:active{transform:scale(.98)}
 .cloud-ok{color:var(--good);font-weight:600}
 .cloud-bad{color:var(--bad);font-weight:600}
+.live{display:inline-block;width:8px;height:8px;border-radius:99px;background:var(--good);margin-right:7px;vertical-align:middle;box-shadow:0 0 0 3px color-mix(in srgb, var(--good) 22%, transparent)}
+.out{color:var(--bad);font-weight:700}
 .link{background:none;border:0;color:var(--muted);text-decoration:underline;font:500 13px var(--body);padding:6px 0 2px 8px;cursor:pointer}
 .link.armed{color:var(--bad);font-weight:700}
 
@@ -193,7 +207,8 @@ input#rngS{accent-color:var(--reserve)}
 .steps li{margin:0 0 10px;padding-left:4px}
 .steps li::marker{font-weight:700;color:var(--muted)}
 .empty p{margin-bottom:12px}
-.welcome{text-align:center;padding:22px 16px 8px}
+.empty-row{display:block!important}
+.welcome{text-align:center;padding:18px 12px 4px}
 .welcome .mark{width:72px;height:72px;border-radius:22px;background:var(--ink);display:grid;grid-template-columns:22px 9px 7px 9px;align-content:center;justify-content:center;gap:3px;margin:0 auto 16px}
 .welcome .mark i{display:block;height:14px;border-radius:99px;background:#8496AC}
 .welcome .mark i:nth-child(2){background:#2CC5B2}
@@ -229,7 +244,7 @@ input#rngS{accent-color:var(--reserve)}
       <span class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
       <div>
         <b>Mi reventa</b>
-        <small>Ventas, costos y reparto</small>
+        <small>Compras, ventas y tu plata</small>
       </div>
     </div>
     <div class="top-acts">
@@ -426,7 +441,11 @@ function save(opts){
 }
 function cloudStatusHTML(){
   if(cloud.err)return '<p class="hint cloud-bad" id="cloudStatus">'+esc(cloud.err)+'</p>';
-  return '<p class="hint cloud-ok" id="cloudStatus">Nube activa. Cada compra o venta se guarda sola.'+(cloud.last?' Último envío: '+ago(cloud.last)+'.':'')+'</p>';
+  return '<p class="hint cloud-ok" id="cloudStatus"><i class="live" aria-hidden="true"></i>Nube activa. Cada compra o venta se guarda sola.'+(cloud.last?' Último envío: '+ago(cloud.last)+'.':'')+'</p>';
+}
+function cloudBanner(){
+  if(!cloud.err)return '';
+  return '<p class="banner">La nube no está guardando. <button class="link" type="button" data-act="go" data-tab="set">Ver cómo arreglarlo</button></p>';
 }
 function cloudHelpHTML(){
   if(!cloud.err)return '';
@@ -446,8 +465,12 @@ function retryCloud(){
   });
 }
 function refreshCloudStatus(){
-  var el=$('#cloudStatus');if(!el)return;
-  el.outerHTML=cloudStatusHTML();
+  var el=$('#cloudStatus');
+  if(el)el.outerHTML=cloudStatusHTML();
+  var main=$('#main');if(!main)return;
+  var old=main.querySelector('.banner');
+  if(cloud.err){if(!old)main.insertAdjacentHTML('afterbegin',cloudBanner());}
+  else if(old)old.remove();
 }
 function readCloudForm(){
   var u=$('#cloudUrl'),a=$('#cloudAnon'),p=$('#cloudPin');
@@ -519,7 +542,7 @@ function paintTheme(){
     b.setAttribute('aria-label',dark?'Cambiar a modo claro':'Cambiar a modo oscuro');
   }
   var m=document.querySelector('meta[name=theme-color]');
-  if(m)m.content=dark?'#0B111A':'#0F1B2D';
+  if(m)m.content=dark?'#0B111A':'#E8EEF4';
 }
 function toggleTheme(){
   var next=themeNow()==='dark'?'light':'dark';
@@ -573,7 +596,7 @@ function bar(v,cls){
   }).join('')+'</div>';
 }
 function nameOf(pid){var p=S.products.find(function(x){return x.id===pid;});return p?p.name:'Producto';}
-var PARTS=[['cost','Costo del producto','Vuelve al fondo para recomprar'],['reinvest','Reinversión','Para crecer con más productos'],['reserve','Reserva','Devoluciones y pedidos perdidos'],['me','Mi pago','Lo que ganas tú']];
+var PARTS=[['cost','Costo del producto','Vuelve a «Para comprar más»'],['reinvest','Reinversión','Para crecer con más productos'],['reserve','Reserva','Devoluciones y pedidos perdidos'],['me','Mi pago','Lo que ganas tú']];
 
 /* ---------- vistas ---------- */
 function viewHome(st){
@@ -581,23 +604,23 @@ function viewHome(st){
   if(!S.purchases.length&&!S.sales.length){
     return '<div class="welcome"><span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>'+
     '<p class="greet">'+greet()+'</p><h1>Empieza con tu primer pedido</h1>'+
-    '<p class="hint">Tus compras, ventas y el reparto de la ganancia en un solo lugar, en este teléfono.</p></div>'+
+    '<p class="lead" style="margin:0 auto 4px">Anota lo que compras y vendes. La app te dice cuánto puedes reinvertir, guardar y pagarte.</p></div>'+
     '<section class="card"><ol class="steps">'+
-    '<li><b>Registra lo que compraste.</b> Pon el costo total, con envío incluido.</li>'+
-    '<li><b>Anota cada venta.</b> La app calcula tu ganancia sola.</li>'+
-    '<li><b>Mira el reparto.</b> Costo, reinversión, reserva y tu pago quedan separados.</li></ol>'+
-    '<button class="btn" data-act="go" data-tab="buy">Registrar mi primera compra</button></section>'+
-    '<p class="hint" style="margin-bottom:10px">¿Usas bolsitas o cajitas para empacar? Regístralas al comprar como «Empaque o insumo» y se descuentan solas en cada venta.</p>'+
-    '<p class="hint">Reparto de la ganancia: '+c.reinvest+'% reinversión, '+c.reserve+'% reserva y '+(100-c.reinvest-c.reserve)+'% para ti. Lo cambias en Ajustes.</p>';
+    '<li><b>Registra lo que compraste.</b> Costo total, con envío incluido.</li>'+
+    '<li><b>Anota cada venta.</b> La ganancia se reparte sola.</li>'+
+    '<li><b>Mira tu plata.</b> Fondo para reponer, reserva y lo tuyo, separados.</li></ol>'+
+    '<button class="btn" data-act="go" data-tab="buy">Registrar mi primera compra</button>'+
+    '<p class="hint" style="margin-top:14px">Si usas bolsitas o cajitas, cómpralas como «Empaque o insumo» y se descuentan en cada venta.</p>'+
+    '<p class="hint" style="margin-top:8px">Hoy el reparto es '+c.reinvest+'% a reinvertir, '+c.reserve+'% a reserva y '+(100-c.reinvest-c.reserve)+'% para ti. Lo cambias en Ajustes.</p></section>';
   }
   var t=st.tot,rev=st.revenue;
   var legend=PARTS.map(function(p){
     return '<li><i class="dot s-'+p[0]+'"></i><div><b>'+p[1]+'</b><small>'+p[2]+'</small></div><div class="amt">'+money(t[p[0]])+'<small>'+pct(t[p[0]],rev)+'%</small></div></li>';
   }).join('');
   var buckets=[
-    {cls:'b-fund',name:'Para comprar más',val:st.fund,hint:'Costo recuperado y reinversión, menos lo que ya compraste.',btn:'<button class="btn ghost sm" data-act="go" data-tab="buy">Registrar compra</button>'},
-    {cls:'b-reserve',key:'reserve',name:'Reserva',val:st.reserve,hint:'Para devoluciones, envíos perdidos o imprevistos.',btn:'<button class="btn ghost sm" data-act="move" data-bucket="reserve">Usar dinero</button>',ph:'Ej. devolución de un cliente'},
-    {cls:'b-me',key:'me',name:'Mi pago',val:st.me,hint:'La parte que sí puedes gastar.',btn:'<button class="btn ghost sm" data-act="move" data-bucket="me">Retirar</button>',ph:'Ej. almuerzo o ahorro'}
+    {cls:'b-fund',name:'Para comprar más',val:st.fund,hint:'Lo que ya recuperaste del costo, más lo que apartaste para crecer, menos lo que volviste a comprar.',btn:'<button class="btn ghost sm" data-act="go" data-tab="buy">Registrar compra</button>'},
+    {cls:'b-reserve',key:'reserve',name:'Reserva',val:st.reserve,hint:'Para devoluciones, envíos perdidos o un imprevisto.',btn:'<button class="btn ghost sm" data-act="move" data-bucket="reserve">Usar reserva</button>',ph:'Ej. devolución de un cliente'},
+    {cls:'b-me',key:'me',name:'Mi pago',val:st.me,hint:'Esta plata sí es tuya para gastar o ahorrar.',btn:'<button class="btn ghost sm" data-act="move" data-bucket="me">Retirar</button>',ph:'Ej. almuerzo o ahorro'}
   ].map(function(b){
     var form='';
     if(b.key&&openMove===b.key){
@@ -605,13 +628,14 @@ function viewHome(st){
       '<div class="field"><label for="mvNote">Para qué (opcional)</label><input id="mvNote" maxlength="60" placeholder="'+b.ph+'"></div></div>'+
       '<div class="row"><button class="btn sm" data-act="domove" data-bucket="'+b.key+'" data-primary>Confirmar</button><button class="btn ghost sm" data-act="movecancel">Cancelar</button></div></div>';
     }
-    return '<section class="card bucket '+b.cls+'"><div class="top"><span class="name">'+b.name+'</span><span class="val'+(b.val<0?' neg':'')+'">'+money(b.val)+'</span></div><p class="hint">'+b.hint+'</p>'+b.btn+form+'</section>';
+    return '<section class="card bucket '+b.cls+'"><div class="bhead"><span class="name">'+b.name+'</span><span class="val'+(b.val<0?' neg':'')+'">'+money(b.val)+'</span></div><p class="hint">'+b.hint+'</p>'+b.btn+form+'</section>';
   }).join('');
   return backupNudge()+
-  '<section class="hero"><p class="greet">'+greet()+'</p><p class="lbl">Ganancia neta en pesos</p><p class="big'+(st.profit<0?' neg':'')+'">'+money(st.profit)+'</p>'+
-  '<div class="kpis"><div><b>'+money(rev)+'</b><span>vendido</span></div><div><b>'+st.units+'</b><span>unidades</span></div><div><b>'+money(st.pocket)+'</b><span>de tu bolsillo</span></div></div></section>'+
-  '<section class="card"><h2>Cómo se repartió lo vendido</h2>'+bar(t)+'<ul class="list" style="margin-top:14px">'+legend+'</ul></section>'+
-  '<h2 style="margin:20px 2px 10px">Disponible ahora</h2>'+buckets+
+  '<section class="hero"><p class="greet">'+greet()+'</p><p class="lbl">Has ganado</p><p class="big'+(st.profit<0?' neg':'')+'">'+money(st.profit)+'</p>'+
+  (st.units<1?'<p class="hint" style="margin:-8px 0 16px">Aún no registras ventas. La ganancia aparece cuando vendas algo.</p>':'')+
+  '<div class="kpis"><div><b>'+money(rev)+'</b><span>Vendido</span></div><div><b>'+st.units+'</b><span>Unidades vendidas</span></div><div><b>'+money(st.pocket)+'</b><span>Pusiste de tu bolsillo</span></div></div></section>'+
+  (st.units>0?'<section class="card"><h2>Cómo se repartió lo vendido</h2><p class="hint" style="margin:-4px 0 12px">De cada venta, la plata queda en 4 partes.</p>'+bar(t)+'<ul class="list" style="margin-top:14px">'+legend+'</ul></section>':'')+
+  '<h2 style="margin:20px 2px 6px">Plata que tienes ahora</h2><p class="hint" style="margin:0 2px 12px">Esto es lo que te queda, no lo que vendiste.</p>'+buckets+
   '<section class="card"><h2>Movimientos recientes</h2><ul class="list plain">'+activity()+'</ul></section>';
 }
 
@@ -630,7 +654,7 @@ function backupNudge(){
   var b=backupInfo(S,Date.now());if(!b.need)return '';
   return '<section class="card nudge"><h2>Haz un respaldo</h2><p class="hint" style="margin-bottom:12px">'+
   (b.last?'Han pasado '+b.days+' días desde tu último respaldo y tienes '+nMov(b.unsaved)+'.':'Ya tienes '+b.total+' movimientos y ningún respaldo.')+
-  ' Tus datos solo viven en este teléfono.</p><button class="btn sm" data-act="backupnow">Copiar respaldo</button></section>';
+  (cloud.err?' La nube no está guardando ahora.':' La nube también guarda, pero un respaldo extra no estorba.')+'</p><button class="btn sm" data-act="backupnow">Copiar respaldo</button></section>';
 }
 function doBackup(){
   var t=$('#bk');if(!t)return;
@@ -647,6 +671,7 @@ function activity(){
   S.purchases.forEach(function(x){a.push({ts:x.ts,t:'Compra',d:nameOf(x.pid)+' ×'+x.qty,amt:x.cost,sign:-1,tag:x.from==='pocket'?'de tu bolsillo':'del fondo'});});
   S.moves.forEach(function(x){a.push({ts:x.ts,t:x.bucket==='me'?'Retiro':'Uso de reserva',d:x.note||'',amt:x.amount,sign:-1,mid:x.id});});
   a.sort(function(p,q){return q.ts-p.ts;});
+  if(!a.length)return '<li class="empty-row"><div><b>Sin movimientos aún</b><small>Aquí van a aparecer tus compras, ventas y retiros.</small></div></li>';
   return a.slice(0,7).map(function(x){
     return '<li><div><b>'+x.t+'</b> '+esc(x.d)+'<small>'+fdate(x.ts)+(x.tag?', '+x.tag:'')+'</small></div>'+
     '<div class="amt'+(x.sign>0?' pos':'')+'">'+(x.sign>0?'+':'−')+money(Math.abs(x.amt)).replace('−','')+'</div>'+
@@ -657,9 +682,9 @@ function activity(){
 function viewSell(st){
   var avail=st.list.filter(function(p){return !p.supply&&p.stock>0;});
   var sups=st.list.filter(function(p){return p.supply;});
-  var h='<h1>Registrar venta</h1>';
+  var h='<h1>Registrar venta</h1><p class="lead">Elige qué vendiste, cuántas y a cuánto. El reparto se calcula solo.</p>';
   if(!avail.length){
-    return h+'<section class="card empty"><p>No tienes productos en stock para vender. Registra una compra primero.</p><button class="btn" data-act="go" data-tab="buy">Registrar una compra</button></section>'+salesList();
+    return h+'<section class="card empty"><p>No tienes nada en stock. Primero registra una compra y después puedes vender.</p><button class="btn" data-act="go" data-tab="buy">Registrar una compra</button></section>'+salesList();
   }
   var sel=avail.find(function(p){return p.id===lastPid;})||avail[0];
   h+='<section class="card" data-form>'+
@@ -689,18 +714,19 @@ function salesList(){
 
 function viewBuy(st){
   var inv=st.list.filter(function(p){return !p.supply;}).sort(function(a,b){return (b.stock>0)-(a.stock>0);}).map(function(p){
-    return '<li><div><b>'+esc(p.name)+'</b><small>Cuesta '+money(p.avg)+' c/u, se vende a '+money(p.price)+'</small></div>'+
-    '<div class="amt">'+(p.stock>0?p.stock:'Agotado')+(p.stock>0?'<small>en stock</small>':'')+'</div></li>';
+    return '<li><div><b>'+esc(p.name)+'</b><small>Te cuesta '+money(p.avg)+' y lo vendes a '+money(p.price)+'</small></div>'+
+    '<div class="amt">'+(p.stock>0?p.stock+'<small>en stock</small>':'<span class="out">Agotado</span>')+'</div></li>';
   }).join('');
   var supl=st.list.filter(function(p){return p.supply;}).map(function(p){
-    return '<li><div><b>'+esc(p.name)+'</b><small>Cuesta '+money(p.avg)+' c/u</small></div>'+
-    '<div class="amt'+(p.stock<=0?' neg':'')+'">'+(p.stock>0?p.stock:'Agotado')+(p.stock>0?'<small>quedan</small>':'')+'</div></li>';
+    return '<li><div><b>'+esc(p.name)+'</b><small>Te cuesta '+money(p.avg)+' cada una</small></div>'+
+    '<div class="amt">'+(p.stock>0?p.stock+'<small>quedan</small>':'<span class="out">Agotado</span>')+'</div></li>';
   }).join('');
   var purs=S.purchases.slice().sort(function(a,b){return b.ts-a.ts;}).slice(0,8).map(function(x){
     return '<li><div><b>'+esc(nameOf(x.pid))+' ×'+x.qty+'</b><small>'+fdate(x.ts)+', '+(x.from==='pocket'?'de tu bolsillo':'del fondo')+'</small></div>'+
     '<div class="amt">'+money(x.cost)+'</div><div class="acts"><button class="link" data-act="delpur" data-id="'+x.id+'">Deshacer</button></div></li>';
   }).join('');
   return '<h1>Registrar compra</h1>'+
+  '<p class="lead">Lo que pediste a Temu u otro proveedor, con el envío metido en el costo.</p>'+
   '<section class="card" data-form>'+
   '<div class="field"><span class="lab">¿Qué compraste?</span><div class="seg">'+
   '<input type="radio" id="bt1" name="bType" value="product"'+(buyType==='product'?' checked':'')+'><label for="bt1">Para vender</label>'+
@@ -712,7 +738,7 @@ function viewBuy(st){
   '<div class="field" id="bPriceField"><label for="bPrice">Precio de venta por unidad (COP)</label><input id="bPrice" type="text" inputmode="numeric" min="0" placeholder="Ej. 15.000"></div>'+
   '<div class="field"><span class="lab">Pagué con</span><div class="seg">'+
   '<input type="radio" id="bf1" name="bFrom" value="pocket" checked><label for="bf1">Mi bolsillo</label>'+
-  '<input type="radio" id="bf2" name="bFrom" value="fund"><label for="bf2">Fondo ('+money(st.fund)+')</label></div></div>'+
+  '<input type="radio" id="bf2" name="bFrom" value="fund"><label for="bf2">Para comprar más ('+money(st.fund)+')</label></div></div>'+
   '<div id="bPrev" class="prev"></div>'+
   '<button class="btn" data-act="dobuy" data-primary>Registrar compra</button></section>'+
   (inv?'<section class="card"><h2>Inventario</h2><ul class="list plain">'+inv+'</ul></section>':'')+
@@ -720,26 +746,33 @@ function viewBuy(st){
   (purs?'<section class="card"><h2>Compras recientes</h2><ul class="list plain">'+purs+'</ul></section>':'');
 }
 
+function chipOn(r,s){return S.settings.reinvest===r&&S.settings.reserve===s?' on':'';}
 function viewSet(){
   var s=S.settings;
   return '<h1>Ajustes</h1>'+
-  '<section class="card"><h2>En tu teléfono</h2>'+
-  '<p class="hint">Puedes usarla como app. En Android toca <b>Instalar</b> arriba. En iPhone: compartir y «Añadir a pantalla de inicio». Los datos se guardan solos en la nube.</p></section>'+
+  '<p class="lead">Cómo se reparte la ganancia, la nube y un respaldo por si acaso.</p>'+
+  '<section class="card"><h2>Usarla como app</h2>'+
+  '<p class="hint">En Android toca <b>Instalar</b> arriba. En iPhone: Compartir → «Añadir a pantalla de inicio».</p></section>'+
   '<section class="card"><h2>Nube</h2>'+
   cloudStatusHTML()+
   cloudHelpHTML()+
-  (cloud.err?'':'<p class="hint" style="margin-top:10px">No hay que activar nada. En este teléfono o en otro, ves lo mismo.</p>')+
+  (cloud.err?'':'<p class="hint" style="margin-top:10px">En este teléfono o en otro ves lo mismo. No hay que activar nada.</p>')+
   '</section>'+
   '<section class="card"><h2>Reparto de la ganancia</h2>'+
-  '<p class="hint" style="margin-bottom:12px">Solo cambia las ventas nuevas. El costo del producto siempre vuelve al fondo.</p>'+
-  '<div class="chips"><button class="chip" data-act="preset" data-r="50" data-s="20">Equilibrado 50/20/30</button><button class="chip" data-act="preset" data-r="70" data-s="15">Crecer rápido 70/15/15</button><button class="chip" data-act="preset" data-r="30" data-s="20">Más para mí 30/20/50</button></div>'+
+  '<p class="hint" style="margin-bottom:12px">Solo aplica a ventas nuevas. El costo del producto siempre vuelve a «Para comprar más».</p>'+
+  '<div class="chips">'+
+  '<button class="chip'+chipOn(50,20)+'" data-act="preset" data-r="50" data-s="20">Equilibrado 50/20/30</button>'+
+  '<button class="chip'+chipOn(70,15)+'" data-act="preset" data-r="70" data-s="15">Crecer rápido 70/15/15</button>'+
+  '<button class="chip'+chipOn(30,20)+'" data-act="preset" data-r="30" data-s="20">Más para mí 30/20/50</button>'+
+  '</div>'+
   '<div class="slider"><div class="head"><label for="rngR">Reinversión</label><span id="vR"></span></div><input id="rngR" type="range" min="0" max="100" step="5" data-set="reinvest"></div>'+
   '<div class="slider"><div class="head"><label for="rngS">Reserva</label><span id="vS"></span></div><input id="rngS" type="range" min="0" max="100" step="5" data-set="reserve"></div>'+
   '<div class="slider"><div class="head"><span>Mi pago (lo que sobra)</span><span id="vM"></span></div></div>'+
   '<div id="setBar"></div><p class="hint" id="setEx"></p></section>'+
   '<section class="card"><h2>Precios</h2>'+
-  '<p class="hint" style="margin-bottom:12px">Todo se cuenta en pesos colombianos (COP). Escribe 80000 o 80.000, da igual.</p>'+
-  '<div class="field"><label for="mk">Ganancia que buscas sobre el costo (%)</label><input id="mk" type="number" inputmode="numeric" min="0" step="5" value="'+s.markup+'" data-set="markup"></div></section>'+
+  '<p class="hint" style="margin-bottom:12px">Todo está en pesos colombianos. Escribe 80000 o 80.000, da igual.</p>'+
+  '<div class="field"><label for="mk">Cuánto quieres ganar sobre el costo (%)</label><input id="mk" type="number" inputmode="numeric" min="0" step="5" value="'+s.markup+'" data-set="markup"></div>'+
+  '<p class="hint">Si te cuesta $ 10.000 y pones 50, te sugiere vender a $ 15.000.</p></section>'+
   '<section class="card"><h2>Respaldo</h2><p class="hint" id="bkStatus" style="margin-bottom:12px"></p>'+
   '<textarea id="bk" placeholder="Aquí aparece tu respaldo. Para restaurar, pega uno o elige un archivo."></textarea>'+
   '<input id="bkFile" type="file" accept="application/json,.json" hidden>'+
@@ -749,7 +782,7 @@ function viewSet(){
   '<button class="btn ghost sm" data-act="pickbk">Elegir archivo</button>'+
   '<button class="btn ghost sm" data-act="restore">Restaurar</button></div>'+
   '<button class="btn ghost sm" id="bkDone" data-act="markbk" style="display:none;margin-top:10px">Ya lo copié</button></section>'+
-  '<section class="card"><h2>Borrar todo</h2><p class="hint" style="margin-bottom:10px">Elimina compras, ventas y retiros de este navegador.</p><button class="btn danger sm" data-act="wipe">Borrar mis datos</button></section>';
+  '<section class="card"><h2>Borrar todo</h2><p class="hint" style="margin-bottom:10px">Borra compras, ventas y retiros de este navegador. La nube no se toca.</p><button class="btn danger sm" data-act="wipe">Borrar mis datos</button></section>';
 }
 
 /* ---------- render ---------- */
@@ -758,7 +791,7 @@ function render(){
   var v={home:viewHome,sell:viewSell,buy:viewBuy,set:viewSet}[tab];
   var box=$('#main');
   box.classList.remove('fade');
-  box.innerHTML=(storageOK?'':'<p class="notice">Este navegador no permite guardar datos. Lo que registres se pierde al cerrar la página.</p>')+v(st);
+  box.innerHTML=(storageOK?'':'<p class="notice">Este navegador no permite guardar datos. Lo que registres se pierde al cerrar la página.</p>')+cloudBanner()+v(st);
   void box.offsetWidth;box.classList.add('fade');
   showInstall();
   document.querySelectorAll('.nav button').forEach(function(b){
@@ -809,7 +842,7 @@ function updBuy(){
   var qty=Math.floor(num($('#bQty').value)),cost=num($('#bCost').value),price=num($('#bPrice').value);
   if(qty<1||cost<=0){el.innerHTML='<p class="hint">'+(isSup?'Pon cantidad y costo total para ver cuánto te cuesta cada unidad.':'Pon cantidad y costo total para ver cuánto te cuesta cada unidad y a cuánto venderla.')+'</p>';return;}
   var from0=document.querySelector('input[name=bFrom]:checked');
-  var fw=(from0&&from0.value==='fund'&&cost>st0.fund)?'<p class="warn">El fondo tiene '+money(st0.fund)+'. Elige «Mi bolsillo» o baja el costo.</p>':'';
+  var fw=(from0&&from0.value==='fund'&&cost>st0.fund)?'<p class="warn">En «Para comprar más» tienes '+money(st0.fund)+'. Elige «Mi bolsillo» o baja el costo.</p>':'';
   if(isSup){el.innerHTML='<div class="prow"><span>Cada unidad te cuesta</span><b>'+money(cost/qty)+'</b></div><p class="hint">Se descontará cuando marques que lo usaste en una venta.</p>'+fw;return;}
   var nm=$('#bName').value.trim().toLowerCase(),mp=st0.list.find(function(p){return !p.supply&&p.name.toLowerCase()===nm;});
   var pk=0;if(mp)(mp.packs||[]).forEach(function(id){var q=st0.map[id];if(q&&q.supply)pk+=q.avg;});
