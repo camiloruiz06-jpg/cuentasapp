@@ -423,7 +423,7 @@ function cloudStatusHTML(){
     (cloud.last?' Último envío: '+ago(cloud.last)+'.':'')+
     (cloud.err?' <span class="cloud-bad">'+esc(cloud.err)+'</span>':'')+'</p>';
   }
-  return '<p class="hint" id="cloudStatus">Todavía no está conectada. Los datos solo viven en este teléfono.</p>';
+  return '<p class="hint'+(cloud.err?' cloud-bad':'')+'" id="cloudStatus">'+(cloud.err?esc(cloud.err):'Todavía no está conectada. Escribe un PIN y toca Activar nube.')+'</p>';
 }
 function refreshCloudStatus(){
   var el=$('#cloudStatus');if(!el)return;
@@ -435,23 +435,31 @@ function readCloudForm(){
   if(a)cloud.anon=a.value.trim();
   if(p)cloud.pin=p.value;
 }
+function markCloudOn(){
+  cloud.ok=true;cloud.err='';cloud.last=Date.now();persistCloud();render();
+}
 function connectCloud(){
   readCloudForm();
-  if(!cloud.url||!cloud.anon||!cloud.pin){toast('Llena URL, clave y PIN',true);return;}
+  if(!cloud.pin){toast('Escribe un PIN de 4 números o más',true);return;}
   if(cloud.pin.length<4){toast('El PIN debe tener al menos 4 caracteres',true);return;}
   persistCloud();
   toast('Conectando…');
   rpc('reventa_pull',{p_pin:cloud.pin}).then(function(payload){
-    cloud.ok=true;cloud.err='';cloud.last=Date.now();persistCloud();
-    if(applyCloudData(payload))toast('Datos bajados de la nube');
-    else {queueCloud();toast('Nube conectada. Se van a guardar tus datos de este teléfono.');}
-    refreshCloudStatus();
+    markCloudOn();
+    if(applyCloudData(payload))toast('Nube activa. Datos bajados.');
+    else {queueCloud();toast('Nube activa. Ya se van a guardar tus datos.');}
   }).catch(function(e){
     var m=String(e&&e.message||'');
     if(m.indexOf('SIN_NUBE')>-1){
-      return rpc('reventa_setup',{p_pin:cloud.pin}).then(function(){
-        cloud.ok=true;cloud.err='';persistCloud();
-        return cloudPush().then(function(){toast('Nube creada. Desde otro teléfono usa el mismo PIN.');refreshCloudStatus();});
+      return rpc('reventa_setup',{p_pin:cloud.pin}).catch(function(){
+        return rpc('reventa_push',{p_pin:cloud.pin,p_data:S});
+      }).then(function(){
+        markCloudOn();
+        toast('Nube activa. Ya se guardan tus compras y ventas.');
+      }).catch(function(e2){
+        cloud.ok=false;persistCloud();
+        toast(cloudMsg(e2)+' Si ya corriste el SQL, vuelve a pegar supabase.sql y dale Run.',true);
+        refreshCloudStatus();
       });
     }
     cloud.ok=false;persistCloud();toast(cloudMsg(e),true);refreshCloudStatus();
